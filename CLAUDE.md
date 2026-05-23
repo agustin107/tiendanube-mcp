@@ -42,7 +42,10 @@ Set these before running (via `.env.local` or MCP client config):
 
 ```ts
 export function registerSomeTool(server: McpServer) {
-  server.tool('tool_name', 'description', { /* zod schema */ }, async (args) => {
+  server.registerTool('tool_name', {
+    description: '...',
+    inputSchema: { /* zod shape */ },
+  }, async (args) => {
     const data = await tnFetch<SomeType>('/endpoint', { method: 'POST', body: args })
     return { content: [{ type: 'text', text: '...' }] }
   })
@@ -56,6 +59,12 @@ export function registerSomeTool(server: McpServer) {
 3. Use Zod for all parameter validation — every param must have a `.describe()`.
 4. Use `tnFetch` for write operations, `tnFetchWithMeta` when you need pagination headers.
 5. Multilingual fields (name, description, handle) are `Record<string, string>` — pass them through as-is; use `pickLocalized()` only when displaying to the user.
+
+## API docs
+
+Always check before implementing or modifying tools:
+- https://dev.tiendanube.com/
+- https://tiendanube.github.io/api-documentation
 
 ## TN API quirks
 
