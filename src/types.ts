@@ -170,6 +170,16 @@ export interface TNWebhook {
   updated_at: string
 }
 
+export interface TNImage {
+  id: number
+  src: string
+  position: number
+  product_id: number
+  created_at: string
+  updated_at: string
+  alt: TNLocalized | null
+}
+
 export interface TNError {
   code?: number
   message?: string | Record<string, string[]>

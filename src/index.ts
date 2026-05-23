@@ -37,6 +37,12 @@ import {
 import { registerGetStoreInfo } from './tools/store.js'
 import { registerListCoupons, registerCreateCoupon } from './tools/coupons.js'
 import { registerListWebhooks } from './tools/webhooks.js'
+import {
+  registerAddProductImages,
+  registerListProductImages,
+  registerDeleteProductImage,
+  registerUpdateProductImage,
+} from './tools/images.js'
 
 const server = new McpServer({
   name: 'tiendanube',
@@ -80,10 +86,16 @@ registerListCoupons(server)
 registerCreateCoupon(server)
 registerListWebhooks(server)
 
+// Imágenes de producto (4)
+registerAddProductImages(server)
+registerListProductImages(server)
+registerDeleteProductImage(server)
+registerUpdateProductImage(server)
+
 async function main() {
   const transport = new StdioServerTransport()
   await server.connect(transport)
-  console.error('[tn-mcp] Server iniciado — 25 tools disponibles (v1.1.0-kitmaq)')
+  console.error('[tn-mcp] Server iniciado — 29 tools disponibles (v1.1.0-kitmaq)')
 }
 
 main().catch((error) => {
