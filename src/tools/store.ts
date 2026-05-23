@@ -3,10 +3,11 @@ import { tnFetch, pickLocalized } from '../client.js'
 import type { TNStore } from '../types.js'
 
 export function registerGetStoreInfo(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'get_store_info',
-    'Obtiene la información general de la tienda: nombre, país, moneda, idioma principal, plan, dominios, email de contacto y features de API habilitadas.',
-    {},
+    {
+      description: 'Obtiene la información general de la tienda: nombre, país, moneda, idioma principal, plan, dominios, email de contacto y features de API habilitadas.',
+    },
     async () => {
       const store = await tnFetch<TNStore>('/store')
 
