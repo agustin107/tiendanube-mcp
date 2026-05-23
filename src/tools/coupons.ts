@@ -4,18 +4,20 @@ import { tnFetch, tnFetchWithMeta } from '../client.js'
 import type { TNCoupon } from '../types.js'
 
 export function registerListCoupons(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'list_coupons',
-    'Lista los cupones de descuento. Filtros por código, validez, tipo y rango de fechas de vigencia.',
     {
-      q: z.string().optional().describe('Búsqueda por código.'),
-      valid: z.boolean().optional().describe('Solo cupones válidos.'),
-      discount_type: z.enum(['percentage', 'absolute', 'shipping']).optional(),
-      includes_shipping: z.boolean().optional(),
-      min_start_date: z.string().optional(),
-      max_end_date: z.string().optional(),
-      page: z.number().min(1).optional(),
-      per_page: z.number().min(1).max(200).optional(),
+      description: 'Lista los cupones de descuento. Filtros por código, validez, tipo y rango de fechas de vigencia.',
+      inputSchema: {
+        q: z.string().optional().describe('Búsqueda por código.'),
+        valid: z.boolean().optional().describe('Solo cupones válidos.'),
+        discount_type: z.enum(['percentage', 'absolute', 'shipping']).optional(),
+        includes_shipping: z.boolean().optional(),
+        min_start_date: z.string().optional(),
+        max_end_date: z.string().optional(),
+        page: z.number().min(1).optional(),
+        per_page: z.number().min(1).max(200).optional(),
+      },
     },
     async (args) => {
       const { data: coupons, totalCount } = await tnFetchWithMeta<TNCoupon[]>(
@@ -53,23 +55,25 @@ export function registerListCoupons(server: McpServer) {
 }
 
 export function registerCreateCoupon(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'create_coupon',
-    'Crea un nuevo cupón de descuento. Para type=percentage o absolute es obligatorio `value`. Para type=shipping, `value` se ignora.',
     {
-      code: z.string().describe('Código único (alfanumérico).'),
-      type: z.enum(['percentage', 'absolute', 'shipping']).describe('percentage=% off, absolute=monto fijo, shipping=envío gratis.'),
-      value: z.union([z.string(), z.number()]).optional().describe('Valor del descuento (requerido para percentage/absolute).'),
-      valid: z.boolean().optional().describe('Activar inmediatamente (default true).'),
-      start_date: z.string().optional().describe('Fecha inicio (YYYY-MM-DD HH:MM:SS).'),
-      end_date: z.string().optional().describe('Fecha fin (YYYY-MM-DD HH:MM:SS).'),
-      max_uses: z.number().optional().describe('Máximo de usos totales.'),
-      min_price: z.number().optional().describe('Compra mínima para aplicar.'),
-      includes_shipping: z.boolean().optional().describe('Si incluye el costo de envío en el descuento.'),
-      first_consumer_purchase: z.boolean().optional().describe('Solo válido para primera compra.'),
-      combines_with_other_discounts: z.boolean().optional().describe('Combinable con otros descuentos (default true).'),
-      categories: z.array(z.number()).optional().describe('Aplica solo a estas categorías (excluyente con products).'),
-      products: z.array(z.number()).optional().describe('Aplica solo a estos productos (excluyente con categories).'),
+      description: 'Crea un nuevo cupón de descuento. Para type=percentage o absolute es obligatorio `value`. Para type=shipping, `value` se ignora.',
+      inputSchema: {
+        code: z.string().describe('Código único (alfanumérico).'),
+        type: z.enum(['percentage', 'absolute', 'shipping']).describe('percentage=% off, absolute=monto fijo, shipping=envío gratis.'),
+        value: z.union([z.string(), z.number()]).optional().describe('Valor del descuento (requerido para percentage/absolute).'),
+        valid: z.boolean().optional().describe('Activar inmediatamente (default true).'),
+        start_date: z.string().optional().describe('Fecha inicio (YYYY-MM-DD HH:MM:SS).'),
+        end_date: z.string().optional().describe('Fecha fin (YYYY-MM-DD HH:MM:SS).'),
+        max_uses: z.number().optional().describe('Máximo de usos totales.'),
+        min_price: z.number().optional().describe('Compra mínima para aplicar.'),
+        includes_shipping: z.boolean().optional().describe('Si incluye el costo de envío en el descuento.'),
+        first_consumer_purchase: z.boolean().optional().describe('Solo válido para primera compra.'),
+        combines_with_other_discounts: z.boolean().optional().describe('Combinable con otros descuentos (default true).'),
+        categories: z.array(z.number()).optional().describe('Aplica solo a estas categorías (excluyente con products).'),
+        products: z.array(z.number()).optional().describe('Aplica solo a estos productos (excluyente con categories).'),
+      },
     },
     async (args) => {
       if ((args.type === 'percentage' || args.type === 'absolute') && args.value === undefined) {

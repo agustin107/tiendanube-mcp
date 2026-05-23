@@ -4,15 +4,17 @@ import { tnFetchWithMeta } from '../client.js'
 import type { TNWebhook } from '../types.js'
 
 export function registerListWebhooks(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'list_webhooks',
-    'Lista los webhooks registrados por tu app en esta tienda. Útil para debugging de notificaciones product/* u order/*.',
     {
-      url: z.string().optional().describe('Filtrar por URL exacta.'),
-      event: z.string().optional().describe('Filtrar por evento (ej: "order/paid", "product/created").'),
-      since_id: z.number().optional(),
-      page: z.number().min(1).optional(),
-      per_page: z.number().min(1).max(200).optional(),
+      description: 'Lista los webhooks registrados por tu app en esta tienda. Útil para debugging de notificaciones product/* u order/*.',
+      inputSchema: {
+        url: z.string().optional().describe('Filtrar por URL exacta.'),
+        event: z.string().optional().describe('Filtrar por evento (ej: "order/paid", "product/created").'),
+        since_id: z.number().optional(),
+        page: z.number().min(1).optional(),
+        per_page: z.number().min(1).max(200).optional(),
+      },
     },
     async (args) => {
       const { data: hooks, totalCount } = await tnFetchWithMeta<TNWebhook[]>(

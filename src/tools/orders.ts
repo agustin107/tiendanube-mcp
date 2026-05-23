@@ -4,22 +4,24 @@ import { tnFetch, tnFetchWithMeta } from '../client.js'
 import type { TNOrder } from '../types.js'
 
 export function registerListOrders(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'list_orders',
-    'Lista órdenes con filtros por status, payment_status, shipping_status y rango de fecha/total. Soporta paginación (per_page máx 200, default 30).',
     {
-      status: z.enum(['any', 'open', 'closed', 'cancelled']).optional().describe('Estado de la orden (default "any").'),
-      payment_status: z.enum(['any', 'pending', 'authorized', 'paid', 'abandoned', 'refunded', 'voided']).optional(),
-      shipping_status: z.enum(['any', 'unpacked', 'unfulfilled', 'fulfilled']).optional(),
-      created_at_min: z.string().optional().describe('Fecha creación desde (ISO 8601).'),
-      created_at_max: z.string().optional().describe('Fecha creación hasta (ISO 8601).'),
-      updated_at_min: z.string().optional().describe('Última actualización desde (ISO 8601).'),
-      total_min: z.number().optional(),
-      total_max: z.number().optional(),
-      channels: z.enum(['form', 'store', 'api', 'meli', 'pos']).optional().describe('Canal de origen.'),
-      customer_ids: z.string().optional().describe('IDs de clientes separados por coma.'),
-      page: z.number().min(1).optional(),
-      per_page: z.number().min(1).max(200).optional(),
+      description: 'Lista órdenes con filtros por status, payment_status, shipping_status y rango de fecha/total. Soporta paginación (per_page máx 200, default 30).',
+      inputSchema: {
+        status: z.enum(['any', 'open', 'closed', 'cancelled']).optional().describe('Estado de la orden (default "any").'),
+        payment_status: z.enum(['any', 'pending', 'authorized', 'paid', 'abandoned', 'refunded', 'voided']).optional(),
+        shipping_status: z.enum(['any', 'unpacked', 'unfulfilled', 'fulfilled']).optional(),
+        created_at_min: z.string().optional().describe('Fecha creación desde (ISO 8601).'),
+        created_at_max: z.string().optional().describe('Fecha creación hasta (ISO 8601).'),
+        updated_at_min: z.string().optional().describe('Última actualización desde (ISO 8601).'),
+        total_min: z.number().optional(),
+        total_max: z.number().optional(),
+        channels: z.enum(['form', 'store', 'api', 'meli', 'pos']).optional().describe('Canal de origen.'),
+        customer_ids: z.string().optional().describe('IDs de clientes separados por coma.'),
+        page: z.number().min(1).optional(),
+        per_page: z.number().min(1).max(200).optional(),
+      },
     },
     async (args) => {
       const { data: orders, totalCount } = await tnFetchWithMeta<TNOrder[]>(
@@ -55,11 +57,13 @@ export function registerListOrders(server: McpServer) {
 }
 
 export function registerGetOrder(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'get_order',
-    'Obtiene una orden completa por id. Incluye cliente, items, envío, tracking y totales.',
     {
-      id: z.number().describe('ID de la orden.'),
+      description: 'Obtiene una orden completa por id. Incluye cliente, items, envío, tracking y totales.',
+      inputSchema: {
+        id: z.number().describe('ID de la orden.'),
+      },
     },
     async ({ id }) => {
       const order = await tnFetch<TNOrder>(`/orders/${id}`)
@@ -110,17 +114,19 @@ export function registerGetOrder(server: McpServer) {
 }
 
 export function registerUpdateOrderStatus(server: McpServer) {
-  server.tool(
+  server.registerTool(
     'update_order_status',
-    'Cambia el estado de una orden: cerrar (close), reabrir (open) o cancelar (cancel). El cancel puede devolver dinero y restaurar stock.',
     {
-      id: z.number().describe('ID de la orden.'),
-      action: z.enum(['close', 'open', 'cancel']).describe('Acción a ejecutar.'),
-      reason: z.enum(['customer', 'inventory', 'fraud', 'other']).optional()
-        .describe('Motivo (solo para cancel).'),
-      email: z.boolean().optional().describe('Notificar al cliente por email (default según configuración de la tienda).'),
-      restock: z.boolean().optional().describe('Restaurar stock al cancelar (solo para cancel).'),
-      refund: z.boolean().optional().describe('Marcar como reembolsado al cancelar (solo para cancel).'),
+      description: 'Cambia el estado de una orden: cerrar (close), reabrir (open) o cancelar (cancel). El cancel puede devolver dinero y restaurar stock.',
+      inputSchema: {
+        id: z.number().describe('ID de la orden.'),
+        action: z.enum(['close', 'open', 'cancel']).describe('Acción a ejecutar.'),
+        reason: z.enum(['customer', 'inventory', 'fraud', 'other']).optional()
+          .describe('Motivo (solo para cancel).'),
+        email: z.boolean().optional().describe('Notificar al cliente por email (default según configuración de la tienda).'),
+        restock: z.boolean().optional().describe('Restaurar stock al cancelar (solo para cancel).'),
+        refund: z.boolean().optional().describe('Marcar como reembolsado al cancelar (solo para cancel).'),
+      },
     },
     async ({ id, action, reason, email, restock, refund }) => {
       const body: Record<string, unknown> = {}
