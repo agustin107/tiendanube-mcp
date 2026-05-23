@@ -5,6 +5,42 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { tnFetch } from '../client.js'
 import type { TNImage } from '../types.js'
 
+const ALLOWED_IMAGE_EXTS = ['.gif', '.jpg', '.jpeg', '.png', '.webp']
+
+type ImageInput = {
+  src?: string
+  file_path?: string
+  filename?: string
+  position?: number
+  alt?: Record<string, string>
+}
+
+type PreparedBody = { body: Record<string, unknown> } | { error: string }
+
+async function buildImageBody(img: ImageInput): Promise<PreparedBody> {
+  if (!img.src && !img.file_path) return { error: 'Debe proveer src o file_path.' }
+  if (img.src && img.file_path) return { error: 'Proveer src o file_path, no ambos.' }
+
+  const body: Record<string, unknown> = {}
+
+  if (img.src) {
+    body.src = img.src
+  } else {
+    if (!img.filename) return { error: 'filename es requerido cuando se usa file_path.' }
+    const ext = extname(img.filename).toLowerCase()
+    if (!ALLOWED_IMAGE_EXTS.includes(ext))
+      return { error: `Extensión no permitida: ${ext}. Usar: ${ALLOWED_IMAGE_EXTS.join(', ')}` }
+    const fileBuffer = await readFile(img.file_path!)
+    body.attachment = fileBuffer.toString('base64')
+    body.filename = img.filename
+  }
+
+  if (img.position !== undefined) body.position = img.position
+  if (img.alt !== undefined) body.alt = img.alt
+
+  return { body }
+}
+
 export function registerAddProductImages(server: McpServer) {
   server.registerTool(
     'add_product_images',
@@ -39,46 +75,16 @@ export function registerAddProductImages(server: McpServer) {
       const results: Array<{ index: number; ok: boolean; image_id?: number; error?: string }> = []
 
       for (let i = 0; i < images.length; i++) {
-        const img = images[i]
-
-        if (!img.src && !img.file_path) {
-          results.push({ index: i, ok: false, error: 'Debe proveer src o file_path.' })
+        const prepared = await buildImageBody(images[i])
+        if ('error' in prepared) {
+          results.push({ index: i, ok: false, error: prepared.error })
           continue
         }
-        if (img.src && img.file_path) {
-          results.push({ index: i, ok: false, error: 'Proveer src o file_path, no ambos.' })
-          continue
-        }
-
         try {
-          const body: Record<string, unknown> = {}
-
-          if (img.src) {
-            body.src = img.src
-          } else if (img.file_path) {
-            if (!img.filename) {
-              results.push({ index: i, ok: false, error: 'filename es requerido cuando se usa file_path.' })
-              continue
-            }
-            const ALLOWED_EXTS = ['.gif', '.jpg', '.jpeg', '.png', '.webp']
-            const ext = extname(img.filename).toLowerCase()
-            if (!ALLOWED_EXTS.includes(ext)) {
-              results.push({ index: i, ok: false, error: `Extensión no permitida: ${ext}. Usar: ${ALLOWED_EXTS.join(', ')}` })
-              continue
-            }
-            const fileBuffer = await readFile(img.file_path)
-            body.attachment = fileBuffer.toString('base64')
-            body.filename = img.filename
-          }
-
-          if (img.position !== undefined) body.position = img.position
-          if (img.alt !== undefined) body.alt = img.alt
-
           const created = await tnFetch<TNImage>(`/products/${product_id}/images`, {
             method: 'POST',
-            body,
+            body: prepared.body,
           })
-
           results.push({ index: i, ok: true, image_id: created.id })
         } catch (err) {
           results.push({ index: i, ok: false, error: (err as Error).message })
