@@ -251,6 +251,41 @@ export function registerDeleteProduct(server: McpServer) {
   )
 }
 
+export function registerGetProductBySku(server: McpServer) {
+  server.registerTool(
+    'get_product_by_sku',
+    {
+      description: 'Obtiene un producto por SKU de variante. Devuelve el primer producto que tenga una variante con ese SKU exacto.',
+      inputSchema: {
+        sku: z.string().describe('SKU de la variante del producto.'),
+      },
+    },
+    async ({ sku }) => {
+      const product = await tnFetch<TNProduct>(`/products/sku/${encodeURIComponent(sku)}`)
+
+      const detail = {
+        id: product.id,
+        nombre: pickLocalized(product.name),
+        publicado: product.published,
+        variantes: (product.variants ?? []).map(v => ({
+          id: v.id,
+          sku: v.sku,
+          precio: v.price,
+          stock: v.stock ?? 'ilimitado',
+        })),
+        categorias: (product.categories ?? []).map(c => c.id),
+      }
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Producto con SKU "${sku}":\n\n${JSON.stringify(detail, null, 2)}`,
+        }],
+      }
+    }
+  )
+}
+
 export function registerUpdateProductStockPrice(server: McpServer) {
   server.registerTool(
     'update_product_stock_price',

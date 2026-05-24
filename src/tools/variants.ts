@@ -7,6 +7,175 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { tnFetch } from '../client.js'
 import type { TNVariant } from '../types.js'
 
+export function registerListProductVariants(server: McpServer) {
+  server.registerTool(
+    'list_product_variants',
+    {
+      description: 'Lista todas las variantes de un producto. Soporta filtros por fecha y since_id.',
+      inputSchema: {
+        product_id: z.number().describe('ID del producto.'),
+        since_id: z.number().optional().describe('Variantes con id mayor a este valor.'),
+        created_at_min: z.string().optional().describe('Creadas desde (ISO 8601).'),
+        created_at_max: z.string().optional().describe('Creadas hasta (ISO 8601).'),
+        updated_at_min: z.string().optional().describe('Actualizadas desde (ISO 8601).'),
+        updated_at_max: z.string().optional().describe('Actualizadas hasta (ISO 8601).'),
+      },
+    },
+    async ({ product_id, ...params }) => {
+      const variants = await tnFetch<TNVariant[]>(
+        `/products/${product_id}/variants`,
+        { params: params as Record<string, string | number | boolean | undefined> }
+      )
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `${variants.length} variantes del producto ${product_id}:\n\n${JSON.stringify(variants, null, 2)}`,
+        }],
+      }
+    }
+  )
+}
+
+export function registerGetProductVariant(server: McpServer) {
+  server.registerTool(
+    'get_product_variant',
+    {
+      description: 'Obtiene una variante específica de un producto por ID.',
+      inputSchema: {
+        product_id: z.number().describe('ID del producto.'),
+        variant_id: z.number().describe('ID de la variante.'),
+      },
+    },
+    async ({ product_id, variant_id }) => {
+      const variant = await tnFetch<TNVariant>(`/products/${product_id}/variants/${variant_id}`)
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Variante ${variant.id} (producto ${variant.product_id}):\n\n${JSON.stringify(variant, null, 2)}`,
+        }],
+      }
+    }
+  )
+}
+
+export function registerReplaceAllProductVariants(server: McpServer) {
+  server.registerTool(
+    'replace_all_product_variants',
+    {
+      description: 'Reemplaza TODA la colección de variantes de un producto (operación destructiva). Crea nuevas variantes, actualiza las que coinciden y ELIMINA las que no están en la lista. Para updates no-destructivos, usar batch_update_product_variants.',
+      inputSchema: {
+        product_id: z.number().describe('ID del producto.'),
+        variants: z.array(z.record(z.unknown())).describe('Lista completa de variantes. Cada variante requiere "values" (array de objetos multilenguaje) más campos opcionales como price, stock, sku.'),
+      },
+    },
+    async ({ product_id, variants }) => {
+      const result = await tnFetch<TNVariant[]>(`/products/${product_id}/variants`, {
+        method: 'PUT',
+        body: variants,
+      })
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Variantes del producto ${product_id} reemplazadas. ${Array.isArray(result) ? result.length : '?'} variantes activas.`,
+        }],
+      }
+    }
+  )
+}
+
+export function registerBatchUpdateProductVariants(server: McpServer) {
+  server.registerTool(
+    'batch_update_product_variants',
+    {
+      description: 'Actualiza múltiples variantes de un producto sin eliminar las no enviadas (no-destructivo). Cada variante debe incluir el campo "id" (ID de variante).',
+      inputSchema: {
+        product_id: z.number().describe('ID del producto.'),
+        variants: z.array(z.record(z.unknown())).describe('Variantes a actualizar. Cada objeto debe incluir "id" (ID de variante) + campos a modificar (price, stock, sku, etc.).'),
+      },
+    },
+    async ({ product_id, variants }) => {
+      const result = await tnFetch<TNVariant[]>(`/products/${product_id}/variants`, {
+        method: 'PATCH',
+        body: variants,
+      })
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Variantes del producto ${product_id} actualizadas. Colección completa: ${Array.isArray(result) ? result.length : '?'} variantes.`,
+        }],
+      }
+    }
+  )
+}
+
+export function registerUpdateVariantStock(server: McpServer) {
+  server.registerTool(
+    'update_variant_stock',
+    {
+      description: 'Actualiza el stock de una o todas las variantes de un producto. action="replace" para valor absoluto (null=ilimitado); action="variation" para sumar/restar. Sin variant_id aplica a todas las variantes.',
+      inputSchema: {
+        product_id: z.number().describe('ID del producto.'),
+        action: z.enum(['replace', 'variation']).describe('"replace": setea stock absoluto. "variation": agrega o resta cantidad.'),
+        value: z.number().nullable().describe('Cantidad. null con action="replace" para stock ilimitado.'),
+        variant_id: z.number().optional().describe('ID de variante específica. Omitir para actualizar todas las variantes del producto.'),
+      },
+    },
+    async ({ product_id, action, value, variant_id }) => {
+      const body: Record<string, unknown> = { action, value }
+      if (variant_id !== undefined) body.id = variant_id
+
+      await tnFetch(`/products/${product_id}/variants/stock`, {
+        method: 'POST',
+        body,
+      })
+
+      const scope = variant_id ? `variante ${variant_id}` : 'todas las variantes'
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Stock actualizado (${action}=${value ?? 'ilimitado'}) para ${scope} del producto ${product_id}.`,
+        }],
+      }
+    }
+  )
+}
+
+export function registerSetVariantExtraShippingDays(server: McpServer) {
+  server.registerTool(
+    'set_variant_extra_shipping_days',
+    {
+      description: 'Setea días adicionales de envío para una variante vía Metafields. Útil para productos que requieren fabricación o preparación extra antes de despachar.',
+      inputSchema: {
+        variant_id: z.number().describe('ID de la variante.'),
+        additional_days: z.number().int().min(0).describe('Días extra de envío (ej: 5).'),
+      },
+    },
+    async ({ variant_id, additional_days }) => {
+      await tnFetch('/metafields', {
+        method: 'POST',
+        body: {
+          key: 'additional_days',
+          value: String(additional_days),
+          namespace: 'shipping_rules',
+          owner_id: variant_id,
+          owner_resource: 'Product_Variant',
+        },
+      })
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Días extra de envío seteados: ${additional_days} días para variante ${variant_id}.`,
+        }],
+      }
+    }
+  )
+}
+
 export function registerCreateProductVariant(server: McpServer) {
   server.registerTool(
     'create_product_variant',

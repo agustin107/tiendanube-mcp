@@ -54,6 +54,40 @@ export function registerListCoupons(server: McpServer) {
   )
 }
 
+export function registerGetCoupon(server: McpServer) {
+  server.registerTool(
+    'get_coupon',
+    {
+      description: 'Obtiene un cupón de descuento por ID. Devuelve código, tipo, valor, validez, usos y fechas de vigencia.',
+      inputSchema: {
+        id: z.number().describe('ID del cupón.'),
+      },
+    },
+    async ({ id }) => {
+      const coupon = await tnFetch<TNCoupon>(`/coupons/${id}`)
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Cupón ${coupon.id}:\n\n${JSON.stringify({
+            id: coupon.id,
+            codigo: coupon.code,
+            tipo: coupon.type,
+            valor: coupon.value,
+            valido: coupon.valid,
+            usos: `${coupon.used}${coupon.max_uses ? `/${coupon.max_uses}` : ''}`,
+            min_compra: coupon.min_price,
+            inicio: coupon.start_date,
+            fin: coupon.end_date,
+            incluye_envio: coupon.includes_shipping,
+            solo_primera_compra: coupon.first_consumer_purchase,
+          }, null, 2)}`,
+        }],
+      }
+    }
+  )
+}
+
 export function registerCreateCoupon(server: McpServer) {
   server.registerTool(
     'create_coupon',
