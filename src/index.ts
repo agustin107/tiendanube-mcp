@@ -10,17 +10,35 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   registerListProducts,
   registerGetProduct,
+  registerGetProductBySku,
   registerUpdateProduct,
   registerCreateProduct,
   registerDeleteProduct,
   registerUpdateProductStockPrice,
 } from './tools/products.js'
 import {
+  registerListProductVariants,
+  registerGetProductVariant,
   registerCreateProductVariant,
   registerUpdateProductVariant,
+  registerReplaceAllProductVariants,
+  registerBatchUpdateProductVariants,
   registerDeleteProductVariant,
+  registerUpdateVariantStock,
+  registerSetVariantExtraShippingDays,
 } from './tools/variants.js'
-import { registerListOrders, registerGetOrder, registerUpdateOrderStatus } from './tools/orders.js'
+import {
+  registerListOrders,
+  registerGetOrder,
+  registerGetOrderHistoryValues,
+  registerGetOrderHistoryEditions,
+  registerCreateOrder,
+  registerUpdateOrder,
+  registerCloseOrder,
+  registerOpenOrder,
+  registerCancelOrder,
+  registerUpdateOrderStatus,
+} from './tools/orders.js'
 import {
   registerListCustomers,
   registerGetCustomer,
@@ -30,12 +48,13 @@ import {
 } from './tools/customers.js'
 import {
   registerListCategories,
+  registerGetCategory,
   registerCreateCategory,
   registerUpdateCategory,
   registerDeleteCategory,
 } from './tools/categories.js'
 import { registerGetStoreInfo } from './tools/store.js'
-import { registerListCoupons, registerCreateCoupon } from './tools/coupons.js'
+import { registerListCoupons, registerGetCoupon, registerCreateCoupon } from './tools/coupons.js'
 import { registerListWebhooks } from './tools/webhooks.js'
 import {
   registerAddProductImages,
@@ -46,25 +65,39 @@ import {
 
 const server = new McpServer({
   name: 'tiendanube',
-  version: '1.1.0-kitmaq',
+  version: '1.2.0',
 })
 
-// Productos (6)
+// Productos (7)
 registerListProducts(server)
 registerGetProduct(server)
+registerGetProductBySku(server)
 registerUpdateProduct(server)
 registerCreateProduct(server)
 registerDeleteProduct(server)
 registerUpdateProductStockPrice(server)
 
-// Variantes (3)
+// Variantes (9)
+registerListProductVariants(server)
+registerGetProductVariant(server)
 registerCreateProductVariant(server)
 registerUpdateProductVariant(server)
+registerReplaceAllProductVariants(server)
+registerBatchUpdateProductVariants(server)
 registerDeleteProductVariant(server)
+registerUpdateVariantStock(server)
+registerSetVariantExtraShippingDays(server)
 
-// Órdenes (3)
+// Órdenes (10)
 registerListOrders(server)
 registerGetOrder(server)
+registerGetOrderHistoryValues(server)
+registerGetOrderHistoryEditions(server)
+registerCreateOrder(server)
+registerUpdateOrder(server)
+registerCloseOrder(server)
+registerOpenOrder(server)
+registerCancelOrder(server)
 registerUpdateOrderStatus(server)
 
 // Clientes (5)
@@ -74,15 +107,17 @@ registerCreateCustomer(server)
 registerUpdateCustomer(server)
 registerDeleteCustomer(server)
 
-// Categorías (4)
+// Categorías (5)
 registerListCategories(server)
+registerGetCategory(server)
 registerCreateCategory(server)
 registerUpdateCategory(server)
 registerDeleteCategory(server)
 
-// Misc (4)
+// Misc (5)
 registerGetStoreInfo(server)
 registerListCoupons(server)
+registerGetCoupon(server)
 registerCreateCoupon(server)
 registerListWebhooks(server)
 
@@ -95,7 +130,7 @@ registerUpdateProductImage(server)
 async function main() {
   const transport = new StdioServerTransport()
   await server.connect(transport)
-  console.error('[tn-mcp] Server iniciado — 29 tools disponibles (v1.1.0-kitmaq)')
+  console.error('[tn-mcp] Server iniciado — 45 tools disponibles (v1.2.0)')
 }
 
 main().catch((error) => {

@@ -3,6 +3,213 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { tnFetch, tnFetchWithMeta } from '../client.js'
 import type { TNOrder } from '../types.js'
 
+export function registerGetOrderHistoryValues(server: McpServer) {
+  server.registerTool(
+    'get_order_history_values',
+    {
+      description: 'Obtiene el historial de alteraciones de valor de una orden (ediciones y reembolsos). Devuelve status, total_delta, total_paid_diff, gateway y timestamps.',
+      inputSchema: {
+        id: z.number().describe('ID de la orden.'),
+      },
+    },
+    async ({ id }) => {
+      const result = await tnFetch<unknown>(`/orders/${id}/history/values`)
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Historial de valores de la orden ${id}:\n\n${JSON.stringify(result, null, 2)}`,
+        }],
+      }
+    }
+  )
+}
+
+export function registerGetOrderHistoryEditions(server: McpServer) {
+  server.registerTool(
+    'get_order_history_editions',
+    {
+      description: 'Obtiene el changelog de ediciones de una orden: productos agregados/removidos, cambios de envío y transacción asociada.',
+      inputSchema: {
+        id: z.number().describe('ID de la orden.'),
+      },
+    },
+    async ({ id }) => {
+      const result = await tnFetch<unknown>(`/orders/${id}/history/editions`)
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Historial de ediciones de la orden ${id}:\n\n${JSON.stringify(result, null, 2)}`,
+        }],
+      }
+    }
+  )
+}
+
+export function registerCreateOrder(server: McpServer) {
+  server.registerTool(
+    'create_order',
+    {
+      description: 'Crea una orden vía API. Las órdenes creadas así tienen storefront="api". No se crean transacciones automáticamente; usá owner_note para guardar referencias de pago externas.',
+      inputSchema: {
+        products: z.array(z.object({
+          variant_id: z.number().describe('ID de la variante.'),
+          quantity: z.number().int().min(1).describe('Cantidad.'),
+          price: z.union([z.string(), z.number()]).optional().describe('Precio custom (default: precio de la variante).'),
+        })).describe('Productos de la orden.'),
+        customer: z.object({
+          name: z.string().describe('Nombre del cliente.'),
+          email: z.string().describe('Email del cliente.'),
+          phone: z.string().optional(),
+          document: z.string().optional().describe('Documento/identificación.'),
+        }).describe('Datos del cliente.'),
+        billing_address: z.record(z.string()).optional().describe('Dirección de facturación (first_name, last_name, address, number, city, province, zipcode, country).'),
+        shipping_address: z.record(z.string()).optional().describe('Dirección de envío (misma estructura que billing_address).'),
+        currency: z.string().optional().describe('Código de moneda ISO 4217 (ej: ARS, BRL, USD).'),
+        language: z.string().optional().describe('Código de idioma ISO 639-1 (ej: es, pt, en).'),
+        gateway: z.string().optional().describe('Gateway de pago (offline, mercadopago, pagseguro, payu, not-provided).'),
+        payment_status: z.enum(['pending', 'authorized', 'paid', 'voided', 'refunded', 'abandoned']).optional(),
+        status: z.enum(['open', 'closed', 'cancelled']).optional(),
+        shipping_status: z.enum(['unpacked', 'unfulfilled', 'fulfilled']).optional(),
+        shipping_pickup_type: z.enum(['ship', 'pickup']).optional(),
+        shipping_store_branch_name: z.string().optional().describe('Nombre de sucursal para retiro.'),
+        shipping_min_delivery_date: z.string().optional().describe('Fecha mínima de entrega (ISO 8601).'),
+        shipping_max_delivery_date: z.string().optional().describe('Fecha máxima de entrega (ISO 8601).'),
+        shipping_tracking_number: z.string().optional(),
+        shipping_tracking_url: z.string().optional(),
+        shipping_cost_owner: z.string().optional().describe('Costo de envío para el vendedor.'),
+        shipping_cost_customer: z.string().optional().describe('Costo de envío para el cliente.'),
+        note: z.string().optional().describe('Nota del cliente.'),
+        owner_note: z.string().optional().describe('Nota interna del vendedor (no visible al cliente).'),
+        inventory_behaviour: z.enum(['bypass', 'claim']).optional().describe('"bypass": no reserva stock; "claim": reserva stock.'),
+        discount_coupon: z.string().optional().describe('Código de cupón.'),
+        extra: z.record(z.unknown()).optional().describe('Campos custom adicionales.'),
+      },
+    },
+    async (args) => {
+      const body = Object.fromEntries(
+        Object.entries(args).filter(([, v]) => v !== undefined)
+      )
+
+      const order = await tnFetch<TNOrder>('/orders', {
+        method: 'POST',
+        body,
+      })
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Orden creada: #${order.number} (id ${order.id}).\n` +
+            `Estado: ${order.status} | Pago: ${order.payment_status} | Envío: ${order.shipping_status}.\n` +
+            `Total: ${order.currency} ${order.total}.`,
+        }],
+      }
+    }
+  )
+}
+
+export function registerUpdateOrder(server: McpServer) {
+  server.registerTool(
+    'update_order',
+    {
+      description: 'Actualiza atributos editables de una orden (owner_note y/o status). Para cerrar/reabrir/cancelar usar close_order, open_order, cancel_order.',
+      inputSchema: {
+        id: z.number().describe('ID de la orden.'),
+        owner_note: z.string().optional().describe('Nota interna del vendedor.'),
+        status: z.enum(['open', 'closed', 'cancelled']).optional(),
+      },
+    },
+    async ({ id, ...body }) => {
+      const cleaned = Object.fromEntries(Object.entries(body).filter(([, v]) => v !== undefined))
+      const updated = await tnFetch<TNOrder>(`/orders/${id}`, { method: 'PUT', body: cleaned })
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Orden ${id} actualizada. Estado: ${updated.status}.`,
+        }],
+      }
+    }
+  )
+}
+
+export function registerCloseOrder(server: McpServer) {
+  server.registerTool(
+    'close_order',
+    {
+      description: 'Cierra una orden (la marca como completada). La orden queda con status="closed".',
+      inputSchema: {
+        id: z.number().describe('ID de la orden.'),
+      },
+    },
+    async ({ id }) => {
+      await tnFetch(`/orders/${id}/close`, { method: 'POST' })
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Orden ${id} cerrada.`,
+        }],
+      }
+    }
+  )
+}
+
+export function registerOpenOrder(server: McpServer) {
+  server.registerTool(
+    'open_order',
+    {
+      description: 'Reabre una orden cerrada. La orden vuelve a status="open".',
+      inputSchema: {
+        id: z.number().describe('ID de la orden.'),
+      },
+    },
+    async ({ id }) => {
+      await tnFetch(`/orders/${id}/open`, { method: 'POST' })
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Orden ${id} reabierta.`,
+        }],
+      }
+    }
+  )
+}
+
+export function registerCancelOrder(server: McpServer) {
+  server.registerTool(
+    'cancel_order',
+    {
+      description: 'Cancela una orden. Puede notificar al cliente, restaurar stock y/o marcar como reembolsada.',
+      inputSchema: {
+        id: z.number().describe('ID de la orden.'),
+        reason: z.enum(['customer', 'inventory', 'fraud', 'other']).optional().describe('Motivo de cancelación.'),
+        email: z.boolean().optional().describe('Notificar al cliente por email.'),
+        restock: z.boolean().optional().describe('Restaurar stock al cancelar.'),
+        refund: z.boolean().optional().describe('Marcar como reembolsado.'),
+      },
+    },
+    async ({ id, reason, email, restock, refund }) => {
+      const body: Record<string, unknown> = {}
+      if (reason !== undefined) body.reason = reason
+      if (email !== undefined) body.email = email
+      if (restock !== undefined) body.restock = restock
+      if (refund !== undefined) body.refund = refund
+
+      await tnFetch(`/orders/${id}/cancel`, { method: 'POST', body })
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Orden ${id} cancelada${reason ? ` (motivo: ${reason})` : ''}.`,
+        }],
+      }
+    }
+  )
+}
+
 export function registerListOrders(server: McpServer) {
   server.registerTool(
     'list_orders',

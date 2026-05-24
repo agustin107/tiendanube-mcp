@@ -48,6 +48,38 @@ export function registerListCategories(server: McpServer) {
   )
 }
 
+export function registerGetCategory(server: McpServer) {
+  server.registerTool(
+    'get_category',
+    {
+      description: 'Obtiene una categoría completa por ID. Incluye nombre, descripción, handle, subcategorías y visibilidad.',
+      inputSchema: {
+        id: z.number().describe('ID de la categoría.'),
+      },
+    },
+    async ({ id }) => {
+      const category = await tnFetch<TNCategory>(`/categories/${id}`)
+
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Categoría ${category.id}:\n\n${JSON.stringify({
+            id: category.id,
+            nombre: pickLocalized(category.name),
+            descripcion: pickLocalized(category.description),
+            handle: pickLocalized(category.handle),
+            padre: category.parent,
+            subcategorias: category.subcategories,
+            visibilidad: category.visibility,
+            google_shopping: category.google_shopping_category,
+            creada: category.created_at,
+          }, null, 2)}`,
+        }],
+      }
+    }
+  )
+}
+
 export function registerCreateCategory(server: McpServer) {
   server.registerTool(
     'create_category',
