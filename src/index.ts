@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
-// MCP Server Tienda Nube / Nuvemshop — 25 tools completas con write-back.
-// Primer MCP full de Tienda Nube en el ecosistema (2 community abandonadas en Python sin licencia).
-// Extensión local (Kitmaq): +12 tools de creación/borrado sobre el fork de TRAID v1.0.
+// MCP Server Tienda Nube / Nuvemshop — 64 tools.
+// v1.3.0: analytics, fulfillment orders, transactions, complete coupon/webhook CRUD.
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -54,18 +53,34 @@ import {
   registerDeleteCategory,
 } from './tools/categories.js'
 import { registerGetStoreInfo } from './tools/store.js'
-import { registerListCoupons, registerGetCoupon, registerCreateCoupon } from './tools/coupons.js'
-import { registerListWebhooks } from './tools/webhooks.js'
+import { registerListCoupons, registerGetCoupon, registerCreateCoupon, registerUpdateCoupon, registerDeleteCoupon } from './tools/coupons.js'
+import { registerListWebhooks, registerGetWebhook, registerCreateWebhook, registerUpdateWebhook, registerDeleteWebhook } from './tools/webhooks.js'
 import {
   registerAddProductImages,
   registerListProductImages,
   registerDeleteProductImage,
   registerUpdateProductImage,
 } from './tools/images.js'
+import {
+  registerGetRevenueSummary,
+  registerGetSalesByPeriod,
+  registerGetBestSellingProducts,
+  registerGetOrdersDashboard,
+  registerGetInventoryAlerts,
+  registerGetPendingPayments,
+} from './tools/analytics.js'
+import {
+  registerListFulfillmentOrders,
+  registerGetFulfillmentOrder,
+  registerUpdateFulfillmentOrder,
+  registerAddTrackingEvent,
+  registerListTrackingEvents,
+} from './tools/fulfillment.js'
+import { registerListOrderTransactions, registerGetOrderTransaction } from './tools/transactions.js'
 
 const server = new McpServer({
   name: 'tiendanube',
-  version: '1.2.0',
+  version: '1.3.0',
 })
 
 // Productos (7)
@@ -114,12 +129,18 @@ registerCreateCategory(server)
 registerUpdateCategory(server)
 registerDeleteCategory(server)
 
-// Misc (5)
+// Misc — Tienda, Cupones (5), Webhooks (5)
 registerGetStoreInfo(server)
 registerListCoupons(server)
 registerGetCoupon(server)
 registerCreateCoupon(server)
+registerUpdateCoupon(server)
+registerDeleteCoupon(server)
 registerListWebhooks(server)
+registerGetWebhook(server)
+registerCreateWebhook(server)
+registerUpdateWebhook(server)
+registerDeleteWebhook(server)
 
 // Imágenes de producto (4)
 registerAddProductImages(server)
@@ -127,10 +148,29 @@ registerListProductImages(server)
 registerDeleteProductImage(server)
 registerUpdateProductImage(server)
 
+// Analytics (6)
+registerGetRevenueSummary(server)
+registerGetSalesByPeriod(server)
+registerGetBestSellingProducts(server)
+registerGetOrdersDashboard(server)
+registerGetInventoryAlerts(server)
+registerGetPendingPayments(server)
+
+// Fulfillment Orders (5)
+registerListFulfillmentOrders(server)
+registerGetFulfillmentOrder(server)
+registerUpdateFulfillmentOrder(server)
+registerAddTrackingEvent(server)
+registerListTrackingEvents(server)
+
+// Transacciones (2)
+registerListOrderTransactions(server)
+registerGetOrderTransaction(server)
+
 async function main() {
   const transport = new StdioServerTransport()
   await server.connect(transport)
-  console.error('[tn-mcp] Server iniciado — 45 tools disponibles (v1.2.0)')
+  console.error('[tn-mcp] Server iniciado — 64 tools disponibles (v1.3.0)')
 }
 
 main().catch((error) => {

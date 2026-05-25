@@ -180,6 +180,45 @@ export interface TNImage {
   alt: TNLocalized | null
 }
 
+export interface TNFulfillmentOrder {
+  id: number
+  order_id: number
+  status: string
+  shipping_tracking_number: string | null
+  shipping_tracking_url: string | null
+  estimated_delivery_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface TNTrackingEvent {
+  id: number
+  fulfillment_order_id: number
+  status: string
+  description: string | null
+  city: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface TNTransaction {
+  id: number
+  payment_provider_id: number
+  payment_method_id: string | null
+  payment_method_type: string | null
+  status: string
+  amount_captured: string | null
+  amount_refunded: string | null
+  amount_authorized: string | null
+  amount_voided: string | null
+  currency: string | null
+  failure_code: string | null
+  failure_message: string | null
+  external_reference: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface TNError {
   code?: number
   message?: string | Record<string, string[]>

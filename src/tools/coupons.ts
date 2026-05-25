@@ -88,6 +88,67 @@ export function registerGetCoupon(server: McpServer) {
   )
 }
 
+export function registerUpdateCoupon(server: McpServer) {
+  server.registerTool(
+    'update_coupon',
+    {
+      description: 'Actualiza un cupón existente. Solo se envían los campos que se quieren modificar.',
+      inputSchema: {
+        id: z.number().describe('ID del cupón a actualizar.'),
+        code: z.string().optional().describe('Nuevo código del cupón.'),
+        type: z.enum(['percentage', 'absolute', 'shipping']).optional(),
+        value: z.union([z.string(), z.number()]).optional().describe('Nuevo valor del descuento.'),
+        valid: z.boolean().optional().describe('Activar o desactivar el cupón.'),
+        start_date: z.string().optional().describe('Nueva fecha inicio (YYYY-MM-DD HH:MM:SS).'),
+        end_date: z.string().optional().describe('Nueva fecha fin (YYYY-MM-DD HH:MM:SS).'),
+        max_uses: z.number().optional().describe('Nuevo máximo de usos.'),
+        min_price: z.number().optional().describe('Nueva compra mínima.'),
+        includes_shipping: z.boolean().optional(),
+        first_consumer_purchase: z.boolean().optional(),
+        combines_with_other_discounts: z.boolean().optional(),
+        categories: z.array(z.number()).optional(),
+        products: z.array(z.number()).optional(),
+      },
+    },
+    async ({ id, ...rest }) => {
+      const body = Object.fromEntries(
+        Object.entries(rest).filter(([, v]) => v !== undefined)
+      )
+      const coupon = await tnFetch<TNCoupon>(`/coupons/${id}`, {
+        method: 'PUT',
+        body,
+      })
+      return {
+        content: [{
+          type: 'text' as const,
+          text: `Cupón ${coupon.id} actualizado:\n` +
+            `  código:  ${coupon.code}\n` +
+            `  tipo:    ${coupon.type}${coupon.value ? ` (${coupon.value})` : ''}\n` +
+            `  válido:  ${coupon.valid}`,
+        }],
+      }
+    }
+  )
+}
+
+export function registerDeleteCoupon(server: McpServer) {
+  server.registerTool(
+    'delete_coupon',
+    {
+      description: 'Elimina un cupón de descuento por ID.',
+      inputSchema: {
+        id: z.number().describe('ID del cupón a eliminar.'),
+      },
+    },
+    async ({ id }) => {
+      await tnFetch<unknown>(`/coupons/${id}`, { method: 'DELETE' })
+      return {
+        content: [{ type: 'text' as const, text: `Cupón ${id} eliminado correctamente.` }],
+      }
+    }
+  )
+}
+
 export function registerCreateCoupon(server: McpServer) {
   server.registerTool(
     'create_coupon',
