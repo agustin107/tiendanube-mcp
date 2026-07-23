@@ -20,7 +20,7 @@ export function registerListCategories(server: McpServer) {
     async (args) => {
       const { data: categories, totalCount } = await tnFetchWithMeta<TNCategory[]>(
         '/categories',
-        { params: args as Record<string, string | number | boolean | undefined> }
+        { params: args as Record<string, string | number | boolean | undefined>, emptyArrayOn404: true }
       )
 
       if (!categories || categories.length === 0) {
@@ -118,7 +118,7 @@ export function registerUpdateCategory(server: McpServer) {
   server.registerTool(
     'update_category',
     {
-      description: 'Actualiza una categoría existente. Sólo los campos provistos se modifican.',
+      description: 'Actualiza una categoría existente. IMPORTANTE: la API de TiendaNube hace REPLACE (no merge) en PUT /categories/{id}, por lo que esta tool trae la categoría actual y reenvía SIEMPRE el payload completo mergeando tus cambios, para no borrar name/handle/parent/description. Podés pasar solo el/los campo(s) que querés cambiar.',
       inputSchema: {
         id: z.number().describe('ID de la categoría.'),
         name: z.record(z.string()).optional().describe('Nuevo nombre por idioma.'),
@@ -129,20 +129,38 @@ export function registerUpdateCategory(server: McpServer) {
       },
     },
     async ({ id, ...body }) => {
-      const cleaned = Object.fromEntries(
+      const provided = Object.fromEntries(
         Object.entries(body).filter(([, v]) => v !== undefined)
       )
 
+      // La API de TiendaNube hace REPLACE en PUT /categories/{id}: los campos que
+      // no se envían se resetean (name/handle -> "", parent -> raíz). Para evitar
+      // pérdida de datos, traemos la categoría actual y mergeamos, enviando SIEMPRE
+      // el payload completo.
+      const current = await tnFetch<TNCategory>(`/categories/${id}`)
+
+      const fullBody: Record<string, unknown> = {
+        name: current.name,
+        handle: current.handle,
+        parent: current.parent ?? null,
+      }
+      if (current.description !== undefined) fullBody.description = current.description
+      if (current.google_shopping_category) fullBody.google_shopping_category = current.google_shopping_category
+
+      // Los campos provistos por el caller pisan a los actuales.
+      Object.assign(fullBody, provided)
+
       const updated = await tnFetch<TNCategory>(`/categories/${id}`, {
         method: 'PUT',
-        body: cleaned,
+        body: fullBody,
       })
 
       return {
         content: [{
           type: 'text' as const,
           text: `Categoría ${updated.id} actualizada ("${pickLocalized(updated.name)}").\n` +
-            `Campos modificados: ${Object.keys(cleaned).join(', ') || 'ninguno'}.`,
+            `Campos modificados: ${Object.keys(provided).join(', ') || 'ninguno'} ` +
+            `(payload completo reenviado para preservar el resto).`,
         }],
       }
     }

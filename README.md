@@ -10,7 +10,7 @@ Primer MCP completo de Tienda Nube en el ecosistema. Los dos proyectos community
 |------|-------------|------|
 | `list_products` | Lista productos con filtros (stock, precio, categoría, fecha) | Lectura |
 | `get_product` | Detalle de un producto (por id o por SKU) | Lectura |
-| `update_product` | Actualiza producto y sus variantes (precio, stock, nombre) | Escritura |
+| `update_product` | Actualiza atributos de producto (nombre, descripción, tags). Variantes: ver tools de variants/ | Escritura |
 | `list_orders` | Lista órdenes con filtros (status, payment, shipping, fecha) | Lectura |
 | `get_order` | Detalle completo de una orden | Lectura |
 | `update_order_status` | Cerrar, reabrir o cancelar una orden | Escritura |
@@ -49,24 +49,57 @@ curl -X POST https://www.tiendanube.com/apps/authorize/token \
 
 La respuesta trae `access_token`, `token_type: "bearer"`, `scope` y `user_id` (ese es tu `TN_STORE_ID`). Guardá las dos cosas.
 
-### 2. Configurar el MCP
+### 2. Configurar credenciales
+
+Copiá `.env.example` a `.env.local` y completá los valores:
+
+```bash
+cp .env.example .env.local
+```
+
+```env
+TN_STORE_ID=1234567
+TN_ACCESS_TOKEN=tu_token
+TN_APP_NAME=Tiendanube MCP
+TN_CONTACT_EMAIL=me@example.com
+```
+
+### 3. Configurar el MCP
+
+El repo incluye configs de proyecto que leen `.env.local` — **no hace falta pegar secretos en el JSON**.
+
+**Cursor** — ya incluido en `.cursor/mcp.json`:
 
 ```json
 {
   "mcpServers": {
     "tiendanube": {
       "command": "node",
-      "args": ["path/to/tiendanube-mcp/dist/index.js"],
-      "env": {
-        "TN_STORE_ID": "1234567",
-        "TN_ACCESS_TOKEN": "...",
-        "TN_APP_NAME": "mi-app",
-        "TN_CONTACT_EMAIL": "me@example.com"
-      }
+      "args": ["${workspaceFolder}/dist/index.js"],
+      "envFile": "${workspaceFolder}/.env.local"
     }
   }
 }
 ```
+
+**Claude Code** — ya incluido en `.mcp.json`:
+
+```json
+{
+  "envFile": ".env.local",
+  "mcpServers": {
+    "tiendanube": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${CLAUDE_PROJECT_DIR}/dist/index.js"]
+    }
+  }
+}
+```
+
+El servidor también carga `.env.local` al arrancar, así que funciona aunque el cliente MCP no soporte `envFile`.
+
+Compilá antes de conectar: `pnpm run build`
 
 `TN_APP_NAME` y `TN_CONTACT_EMAIL` se usan para el header `User-Agent` que la API de TN recomienda enviar.
 

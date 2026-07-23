@@ -14,7 +14,8 @@ export function registerListFulfillmentOrders(server: McpServer) {
     },
     async ({ order_id }) => {
       const { data: items } = await tnFetchWithMeta<TNFulfillmentOrder[]>(
-        `/orders/${order_id}/fulfillment-orders`
+        `/orders/${order_id}/fulfillment-orders`,
+        { emptyArrayOn404: true }
       )
 
       if (!items || items.length === 0) {
@@ -131,7 +132,8 @@ export function registerListTrackingEvents(server: McpServer) {
     },
     async ({ order_id, fulfillment_order_id }) => {
       const { data: events } = await tnFetchWithMeta<TNTrackingEvent[]>(
-        `/orders/${order_id}/fulfillment-orders/${fulfillment_order_id}/tracking-events`
+        `/orders/${order_id}/fulfillment-orders/${fulfillment_order_id}/tracking-events`,
+        { emptyArrayOn404: true }
       )
 
       if (!events || events.length === 0) {

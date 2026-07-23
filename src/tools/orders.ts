@@ -233,7 +233,7 @@ export function registerListOrders(server: McpServer) {
     async (args) => {
       const { data: orders, totalCount } = await tnFetchWithMeta<TNOrder[]>(
         '/orders',
-        { params: args as Record<string, string | number | boolean | undefined> }
+        { params: args as Record<string, string | number | boolean | undefined>, emptyArrayOn404: true }
       )
 
       if (!orders || orders.length === 0) {

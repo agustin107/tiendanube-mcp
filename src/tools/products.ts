@@ -35,7 +35,7 @@ export function registerListProducts(server: McpServer) {
     async (args) => {
       const { data: products, totalCount } = await tnFetchWithMeta<TNProduct[]>(
         '/products',
-        { params: args as Record<string, string | number | boolean | undefined> }
+        { params: args as Record<string, string | number | boolean | undefined>, emptyArrayOn404: true }
       )
 
       if (!products || products.length === 0) {
@@ -124,7 +124,7 @@ export function registerUpdateProduct(server: McpServer) {
   server.registerTool(
     'update_product',
     {
-      description: 'Actualiza atributos de un producto (precio/stock de variantes, nombre, descripción, tags, publicación). Las variantes se pasan en el array `variants` con su id. Retorna el producto actualizado.',
+      description: 'Actualiza atributos de producto (nombre, descripción, tags, publicación, categorías). Para precio/stock/SKU de variantes usar update_product_variant, batch_update_product_variants o update_product_stock_price — la API de TN rechaza variants en PUT /products/{id} (422).',
       inputSchema: {
         id: z.number().describe('ID del producto a actualizar.'),
         name: z.record(z.string()).optional().describe('Nombre por idioma, ej: { es: "Nuevo nombre" }.'),
@@ -136,22 +136,18 @@ export function registerUpdateProduct(server: McpServer) {
         tags: z.string().optional().describe('Tags separados por coma.'),
         seo_title: z.record(z.string()).optional().describe('SEO title por idioma (máx 70 chars).'),
         seo_description: z.record(z.string()).optional().describe('SEO description por idioma (máx 320 chars).'),
-        variants: z.array(z.object({
-          id: z.number().describe('ID de la variante a actualizar.'),
-          price: z.union([z.string(), z.number()]).optional(),
-          promotional_price: z.union([z.string(), z.number()]).optional().nullable(),
-          stock: z.number().optional().describe('Stock. Usar null para stock infinito.').nullable(),
-          sku: z.string().optional().nullable(),
-          weight: z.union([z.string(), z.number()]).optional(),
-        })).optional().describe('Variantes a actualizar (cada una requiere id).'),
         categories: z.array(z.number()).optional().describe('IDs de categorías (reemplaza las actuales).'),
       },
     },
     async ({ id, ...body }) => {
-      // TN acepta PUT con solo los campos a cambiar
+      // TN acepta PUT con solo los campos a cambiar (sin variants — ver docs PUT /products/{id})
       const cleaned = Object.fromEntries(
         Object.entries(body).filter(([, v]) => v !== undefined)
       )
+
+      if (Object.keys(cleaned).length === 0) {
+        throw new Error('No hay campos para actualizar. Para variantes usar update_product_variant o batch_update_product_variants.')
+      }
 
       const updated = await tnFetch<TNProduct>(`/products/${id}`, {
         method: 'PUT',
@@ -162,7 +158,7 @@ export function registerUpdateProduct(server: McpServer) {
         content: [{
           type: 'text' as const,
           text: `Producto ${updated.id} actualizado ("${pickLocalized(updated.name)}").\n` +
-            `Campos modificados: ${Object.keys(cleaned).join(', ') || 'ninguno'}.\n` +
+            `Campos modificados: ${Object.keys(cleaned).join(', ')}.\n` +
             `Última actualización: ${updated.updated_at}`,
         }],
       }

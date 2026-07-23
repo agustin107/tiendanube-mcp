@@ -3,6 +3,8 @@
 // MCP Server Tienda Nube / Nuvemshop — 64 tools.
 // v1.3.0: analytics, fulfillment orders, transactions, complete coupon/webhook CRUD.
 
+import './env.js'
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
@@ -77,10 +79,36 @@ import {
   registerListTrackingEvents,
 } from './tools/fulfillment.js'
 import { registerListOrderTransactions, registerGetOrderTransaction } from './tools/transactions.js'
+import {
+  registerListPages,
+  registerGetPage,
+  registerCreatePage,
+  registerUpdatePage,
+  registerDeletePage,
+} from './tools/pages.js'
+import {
+  registerGetBlog,
+  registerListBlogPosts,
+  registerGetBlogPost,
+  registerCreateBlogPost,
+  registerUpdateBlogPost,
+  registerPublishBlogPost,
+  registerUnpublishBlogPost,
+  registerDeleteBlogPost,
+  registerUploadBlogMedia,
+  registerUploadBlogThumbnail,
+} from './tools/blog.js'
+import {
+  registerListMetafields,
+  registerCreateMetafield,
+  registerUpdateMetafield,
+  registerDeleteMetafield,
+  registerSetRelatedProducts,
+} from './tools/metafields.js'
 
 const server = new McpServer({
   name: 'tiendanube',
-  version: '1.3.0',
+  version: '1.5.0',
 })
 
 // Productos (7)
@@ -167,10 +195,36 @@ registerListTrackingEvents(server)
 registerListOrderTransactions(server)
 registerGetOrderTransaction(server)
 
+// Páginas institucionales — API 2025-03 (5) — requiere scopes read_content/write_content
+registerListPages(server)
+registerGetPage(server)
+registerCreatePage(server)
+registerUpdatePage(server)
+registerDeletePage(server)
+
+// Blog — API 2025-03 (10) — requiere scopes read_content/write_content
+registerGetBlog(server)
+registerListBlogPosts(server)
+registerGetBlogPost(server)
+registerCreateBlogPost(server)
+registerUpdateBlogPost(server)
+registerPublishBlogPost(server)
+registerUnpublishBlogPost(server)
+registerDeleteBlogPost(server)
+registerUploadBlogMedia(server)
+registerUploadBlogThumbnail(server)
+
+// Metafields (5) — incluye set_related_products (productos relacionados vía metafield)
+registerListMetafields(server)
+registerCreateMetafield(server)
+registerUpdateMetafield(server)
+registerDeleteMetafield(server)
+registerSetRelatedProducts(server)
+
 async function main() {
   const transport = new StdioServerTransport()
   await server.connect(transport)
-  console.error('[tn-mcp] Server iniciado — 64 tools disponibles (v1.3.0)')
+  console.error('[tn-mcp] Server iniciado — 84 tools disponibles (v1.5.0)')
 }
 
 main().catch((error) => {

@@ -19,7 +19,7 @@ export function registerListWebhooks(server: McpServer) {
     async (args) => {
       const { data: hooks, totalCount } = await tnFetchWithMeta<TNWebhook[]>(
         '/webhooks',
-        { params: args as Record<string, string | number | boolean | undefined> }
+        { params: args as Record<string, string | number | boolean | undefined>, emptyArrayOn404: true }
       )
 
       if (!hooks || hooks.length === 0) {

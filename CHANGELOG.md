@@ -2,6 +2,14 @@
 
 Todas las versiones de `@traid/tiendanube-mcp` en orden inverso.
 
+## [1.5.0] — 2026-07-13
+
+### Added
+- Módulo **Metafields** (`src/tools/metafields.ts`) — 5 tools nuevas (total 84):
+  - `list_metafields` — lista metafields por entidad (Product, Product_Variant, Category, Page, Order, Customer), filtrable por owner_id/namespace/key
+  - `create_metafield` / `update_metafield` / `delete_metafield` — CRUD genérico
+  - `set_related_products` — setea productos relacionados (alternativos) de un producto vía el metafield `related_products.related_products_ids` que lee el theme Base. Idempotente (crea o actualiza); `related_ids=[]` limpia.
+
 ## [1.0.0] — 2026-04-17
 
 ### Added

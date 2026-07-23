@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "tiendanube": {
+      "command": "/bin/bash",
+      "args": ["${workspaceFolder}/run-mcp.sh"]
+    }
+  }
+}

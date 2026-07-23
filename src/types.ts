@@ -219,6 +219,76 @@ export interface TNTransaction {
   updated_at: string
 }
 
+// --- Páginas (API 2025-03, /pages) ---
+// content, name, handle, seo_* son objetos multilenguaje keyeados por código de idioma.
+export interface TNPage {
+  id: number
+  store_id: number
+  published: boolean
+  created_at: string
+  updated_at: string
+  name: TNLocalized
+  handle: TNLocalized
+  content: TNLocalized
+  seo_title: TNLocalized | null
+  seo_description: TNLocalized | null
+}
+
+// Respuesta paginada de GET /pages
+export interface TNPagesResponse {
+  pages: {
+    results: TNPage[]
+    total: number
+    page: number
+    perPage: number
+    lastPage: number
+  }
+}
+
+// --- Blog (API 2025-03, /blogs) ---
+// GET /blogs → identifica el blog de la tienda (blog_id es UUID)
+export interface TNBlog {
+  blog_id: string
+  owner: { id: string }
+}
+
+// Cada post trae su contenido por idioma en el array `data`.
+export interface TNBlogPostData {
+  language: string
+  title: string
+  handle: string
+  summary: string
+  seo_title: string
+  seo_description: string
+  content: string
+}
+
+export interface TNBlogPost {
+  blog_id: string
+  post_id: string
+  created_at: string
+  updated_at: string
+  published_at: string | null
+  thumbnail: string | null
+  data: TNBlogPostData[]
+  author: { id: string; name: string }
+}
+
+// Respuesta paginada de GET /blogs/{blog_id}/posts
+export interface TNBlogPostsResponse {
+  posts: {
+    data: TNBlogPost[]
+    meta: {
+      page: number
+      take: number
+      itemCount: number
+      pageCount: number
+      previousPage: number | null
+      nextPage: number | null
+    }
+  }
+}
+
 export interface TNError {
   code?: number
   message?: string | Record<string, string[]>

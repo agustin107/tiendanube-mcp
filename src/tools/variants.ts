@@ -24,7 +24,7 @@ export function registerListProductVariants(server: McpServer) {
     async ({ product_id, ...params }) => {
       const variants = await tnFetch<TNVariant[]>(
         `/products/${product_id}/variants`,
-        { params: params as Record<string, string | number | boolean | undefined> }
+        { params: params as Record<string, string | number | boolean | undefined>, emptyArrayOn404: true }
       )
 
       return {

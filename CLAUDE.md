@@ -72,5 +72,6 @@ Always check before implementing or modifying tools:
 - Multilingual fields come back as `{ es: "...", pt: "...", en: "..." }` — use `pickLocalized()` to display
 - `stock: null` means unlimited stock
 - Variants hold price/stock, not the product itself
+- **PUT /products/{id} does NOT accept `variants`** — returns 422. Use `PUT /products/{id}/variants/{variant_id}`, `PATCH /products/{id}/variants`, or `PATCH /products/stock-price` instead
 - Bulk stock/price update: `PATCH /products/stock-price` (max 50 items)
 - Base URL: `https://api.tiendanube.com/v1/{store_id}/`

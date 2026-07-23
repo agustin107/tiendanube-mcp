@@ -14,7 +14,8 @@ export function registerListOrderTransactions(server: McpServer) {
     },
     async ({ order_id }) => {
       const { data: transactions } = await tnFetchWithMeta<TNTransaction[]>(
-        `/orders/${order_id}/transactions`
+        `/orders/${order_id}/transactions`,
+        { emptyArrayOn404: true }
       )
 
       if (!transactions || transactions.length === 0) {

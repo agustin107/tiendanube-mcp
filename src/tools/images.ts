@@ -118,7 +118,7 @@ export function registerListProductImages(server: McpServer) {
       },
     },
     async ({ product_id }) => {
-      const images = await tnFetch<TNImage[]>(`/products/${product_id}/images`)
+      const images = await tnFetch<TNImage[]>(`/products/${product_id}/images`, { emptyArrayOn404: true })
 
       return {
         content: [{

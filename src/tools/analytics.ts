@@ -9,6 +9,7 @@ async function fetchAllPages<T>(path: string, params: Record<string, string>): P
   while (true) {
     const { data, linkHeader } = await tnFetchWithMeta<T[]>(path, {
       params: { ...params, page: String(page), per_page: '50' },
+      emptyArrayOn404: true,
     })
     if (data) results.push(...data)
     if (!linkHeader?.includes('rel="next"')) break

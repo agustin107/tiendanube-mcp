@@ -1,22 +1,34 @@
 // HTTP client para la API de Tienda Nube / Nuvemshop con rate limiting y retry.
 //
 // Notas de la API:
-// - Header de auth: "Authentication: bearer <token>" (OJO: NO "Authorization")
+// - Header de auth v1: "Authentication: bearer <token>" (OJO: NO "Authorization")
+// - Header de auth 2025-03: "Authorization: Bearer <token>" (según docs nuevas)
+//   => mandamos AMBOS headers siempre; el endpoint usa el que corresponda.
 // - User-Agent obligatorio con email de contacto: "MyApp (contact@example.com)"
-// - Base URL: https://api.tiendanube.com/v1/{store_id}/
+// - Base URL v1:      https://api.tiendanube.com/v1/{store_id}/
+// - Base URL 2025-03: https://api.tiendanube.com/2025-03/{store_id}/  (páginas y blog viven acá)
 // - Rate limit: varía por plan. Aplicamos retry con backoff ante 429.
 
 import { getAccessToken, getStoreId, getUserAgent } from './auth.js'
 import type { TNError } from './types.js'
 
-const TN_API_BASE = 'https://api.tiendanube.com/v1'
+const TN_API_BASE_V1 = 'https://api.tiendanube.com/v1'
+const TN_API_BASE_2025_03 = 'https://api.tiendanube.com/2025-03'
 const MAX_RETRIES = 2
 const RETRY_DELAY_MS = 1000
 
+// Versión de la API. 'v1' es el default histórico; '2025-03' se usa para páginas y blog.
+export type TNApiVersion = 'v1' | '2025-03'
+
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
-  body?: Record<string, unknown> | unknown[]
+  // body puede ser JSON (objeto/array) o FormData (multipart, requerido por el blog).
+  body?: Record<string, unknown> | unknown[] | FormData
   params?: Record<string, string | number | boolean | undefined>
+  apiVersion?: TNApiVersion
+  // Si la API responde 404 en un GET de listado (TN devuelve 404 cuando un filtro
+  // no matchea ningun recurso, ej: /orders sin resultados), devolver [] en vez de tirar error.
+  emptyArrayOn404?: boolean
 }
 
 export interface TNResponse<T> {
@@ -37,11 +49,12 @@ export async function tnFetchWithMeta<T>(
   path: string,
   options: RequestOptions = {}
 ): Promise<TNResponse<T>> {
-  const { method = 'GET', body, params } = options
+  const { method = 'GET', body, params, apiVersion = 'v1', emptyArrayOn404 = false } = options
   const storeId = getStoreId()
 
-  // Construir URL
-  let url = `${TN_API_BASE}/${storeId}${path}`
+  // Construir URL según la versión de API
+  const base = apiVersion === '2025-03' ? TN_API_BASE_2025_03 : TN_API_BASE_V1
+  let url = `${base}/${storeId}${path}`
   if (params) {
     const searchParams = new URLSearchParams()
     for (const [key, value] of Object.entries(params)) {
@@ -59,14 +72,25 @@ export async function tnFetchWithMeta<T>(
     try {
       const token = getAccessToken()
 
+      // Detectar multipart: si el body es FormData, fetch setea el Content-Type
+      // (con boundary) automáticamente, así que NO lo definimos a mano.
+      const isFormData = typeof FormData !== 'undefined' && body instanceof FormData
+
+      const headers: Record<string, string> = {
+        Authentication: `bearer ${token}`, // v1
+        Authorization: `Bearer ${token}`, // 2025-03
+        'User-Agent': getUserAgent(),
+      }
+      if (body !== undefined && !isFormData) {
+        headers['Content-Type'] = 'application/json'
+      }
+
       const response = await fetch(url, {
         method,
-        headers: {
-          Authentication: `bearer ${token}`,
-          'User-Agent': getUserAgent(),
-          'Content-Type': 'application/json',
-        },
-        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+        headers,
+        ...(body !== undefined
+          ? { body: isFormData ? (body as FormData) : JSON.stringify(body) }
+          : {}),
       })
 
       // Rate limit: respetar X-Rate-Limit-Reset si está presente, sino backoff
@@ -79,6 +103,12 @@ export async function tnFetchWithMeta<T>(
       }
 
       if (!response.ok) {
+        // TN devuelve 404 en list endpoints cuando el filtro no matchea nada
+        // (ej: GET /orders?payment_status=pending sin ordenes pendientes).
+        // En ese caso devolvemos una lista vacia en vez de tirar error.
+        if (response.status === 404 && emptyArrayOn404) {
+          return { data: [] as unknown as T, totalCount: 0, linkHeader: null }
+        }
         const errorData = await response.json().catch(() => null) as TNError | null
         const msg = formatTNError(errorData) || `HTTP ${response.status}`
         throw new Error(`Error API TN: ${msg} [${method} ${path}]`)

@@ -22,7 +22,7 @@ export function registerListCoupons(server: McpServer) {
     async (args) => {
       const { data: coupons, totalCount } = await tnFetchWithMeta<TNCoupon[]>(
         '/coupons',
-        { params: args as Record<string, string | number | boolean | undefined> }
+        { params: args as Record<string, string | number | boolean | undefined>, emptyArrayOn404: true }
       )
 
       if (!coupons || coupons.length === 0) {
