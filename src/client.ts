@@ -140,15 +140,32 @@ export async function tnFetchWithMeta<T>(
 
 function formatTNError(err: TNError | null): string | null {
   if (!err) return null
-  if (typeof err.message === 'string') return err.message
-  if (err.message && typeof err.message === 'object') {
+
+  const parts: string[] = []
+
+  if (typeof err.message === 'string') {
+    parts.push(err.message)
+  } else if (err.message && typeof err.message === 'object') {
     // TN devuelve errores de validación como { field: ["msg1", "msg2"] }
-    return Object.entries(err.message)
-      .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
-      .join(' | ')
+    parts.push(
+      Object.entries(err.message)
+        .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`)
+        .join(' | ')
+    )
   }
-  if (err.description) return err.description
-  return null
+
+  // `message` suele ser genérico ("Unprocessable Entity"); el motivo real viene
+  // en `description` o como errores de validación al nivel raíz del objeto,
+  // ej: { "name": ["can't be blank"] }. Antes se descartaban.
+  if (err.description) parts.push(err.description)
+
+  const RESERVED = new Set(['code', 'message', 'description', 'error'])
+  const fieldErrors = Object.entries(err as unknown as Record<string, unknown>)
+    .filter(([key, value]) => !RESERVED.has(key) && Array.isArray(value))
+    .map(([field, msgs]) => `${field}: ${(msgs as unknown[]).join(', ')}`)
+  if (fieldErrors.length) parts.push(fieldErrors.join(' | '))
+
+  return parts.length ? parts.join(' — ') : null
 }
 
 function isRetryable(error: Error): boolean {

@@ -38,7 +38,7 @@ export function registerGetFulfillmentOrder(server: McpServer) {
       description: 'Obtiene el detalle de un fulfillment order específico (estado, tracking, destino, etc.).',
       inputSchema: {
         order_id: z.number().describe('ID de la orden.'),
-        fulfillment_order_id: z.number().describe('ID del fulfillment order.'),
+        fulfillment_order_id: z.string().describe('ID del fulfillment order (ULID, ej: 01KYWBE2DSF7PJJPYFZYKT7H62).'),
       },
     },
     async ({ order_id, fulfillment_order_id }) => {
@@ -59,7 +59,7 @@ export function registerUpdateFulfillmentOrder(server: McpServer) {
       description: 'Actualiza un fulfillment order: estado, número de seguimiento, carrier o fecha estimada de entrega.',
       inputSchema: {
         order_id: z.number().describe('ID de la orden.'),
-        fulfillment_order_id: z.number().describe('ID del fulfillment order.'),
+        fulfillment_order_id: z.string().describe('ID del fulfillment order (ULID, ej: 01KYWBE2DSF7PJJPYFZYKT7H62).'),
         status: z.string().optional().describe('Nuevo estado (ej: DISPATCHED, FULFILLED, CANCELLED).'),
         shipping_tracking_number: z.string().optional().describe('Número de tracking del envío.'),
         shipping_tracking_url: z.string().url().optional().describe('URL de seguimiento del envío.'),
@@ -96,10 +96,24 @@ export function registerAddTrackingEvent(server: McpServer) {
       description: 'Agrega un evento de tracking a un fulfillment order. La orden debe estar en estado DISPATCHED. Usar status "delivered" marca el fulfillment como completado.',
       inputSchema: {
         order_id: z.number().describe('ID de la orden.'),
-        fulfillment_order_id: z.number().describe('ID del fulfillment order.'),
-        status: z.string().describe('Estado del evento (ej: dispatched, in_transit, out_for_delivery, delivered, failed).'),
-        description: z.string().optional().describe('Descripción del evento.'),
-        city: z.string().optional().describe('Ciudad donde ocurrió el evento.'),
+        fulfillment_order_id: z.string().describe('ID del fulfillment order (ULID, ej: 01KYWBE2DSF7PJJPYFZYKT7H62).'),
+        status: z.enum([
+          'dispatched',
+          'received_by_post_office',
+          'in_transit',
+          'out_for_delivery',
+          'delivery_attempt_failed',
+          'delayed',
+          'ready_for_pickup',
+          'delivered',
+          'returned_to_sender',
+          'lost',
+          'failure',
+        ]).describe('Estado del evento. "delivered" marca el fulfillment order como DELIVERED y setea fulfilled_at.'),
+        description: z.string().describe('Descripción del evento (obligatoria por la API).'),
+        address: z.string().optional().describe('Dirección en una línea. Ej: "Pirovano 2550, Corrientes, Argentina".'),
+        happened_at: z.string().optional().describe('Fecha del evento en ISO 8601. Si se omite, se toma ahora.'),
+        estimated_delivery_at: z.string().optional().describe('Fecha estimada de entrega en ISO 8601.'),
       },
     },
     async ({ order_id, fulfillment_order_id, ...rest }) => {
@@ -127,7 +141,7 @@ export function registerListTrackingEvents(server: McpServer) {
       description: 'Lista todos los eventos de tracking de un fulfillment order, en orden cronológico.',
       inputSchema: {
         order_id: z.number().describe('ID de la orden.'),
-        fulfillment_order_id: z.number().describe('ID del fulfillment order.'),
+        fulfillment_order_id: z.string().describe('ID del fulfillment order (ULID, ej: 01KYWBE2DSF7PJJPYFZYKT7H62).'),
       },
     },
     async ({ order_id, fulfillment_order_id }) => {

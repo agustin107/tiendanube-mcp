@@ -118,6 +118,8 @@ export interface TNCategory {
   parent: number | null
   subcategories: number[]
   google_shopping_category: string | null
+  seo_title: TNLocalized | null
+  seo_description: TNLocalized | null
   visibility: 'visible' | 'hidden' | 'soft-hidden'
   created_at: string
   updated_at: string
@@ -181,7 +183,7 @@ export interface TNImage {
 }
 
 export interface TNFulfillmentOrder {
-  id: number
+  id: string
   order_id: number
   status: string
   shipping_tracking_number: string | null
@@ -192,11 +194,14 @@ export interface TNFulfillmentOrder {
 }
 
 export interface TNTrackingEvent {
-  id: number
-  fulfillment_order_id: number
+  id: string
+  fulfillment_order_id: string
   status: string
   description: string | null
-  city: string | null
+  address: string | null
+  geolocation: { latitude: number; longitude: number } | null
+  happened_at: string | null
+  estimated_delivery_at: string | null
   created_at: string
   updated_at: string
 }
