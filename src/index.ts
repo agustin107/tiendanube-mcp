@@ -105,11 +105,12 @@ import {
   registerDeleteMetafield,
   registerSetRelatedProducts,
 } from './tools/metafields.js'
+import { guardServer } from './tool-guard.js'
 
-const server = new McpServer({
+const server = guardServer(new McpServer({
   name: 'tiendanube',
   version: '1.5.0',
-})
+}))
 
 // Productos (7)
 registerListProducts(server)

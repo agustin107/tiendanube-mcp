@@ -109,10 +109,25 @@ Una vez configurado, Claude Code puede ejecutar directamente:
 
 - "Listame los productos con menos de 5 unidades de stock"
 - "Mostrame las últimas 20 órdenes pagadas"
-- "Actualizá el precio de la variante X a $15000"
 - "Creá un cupón `VERANO30` del 30% con mínimo $20000, válido hasta 2026-12-31"
 - "Cancelá la orden 12345 con motivo inventory y devolvé stock"
 - "Cuáles son los webhooks de mi app en la tienda?"
+
+## Escrituras del motor de KitMaq (`KITMAQ_ESCRITURAS_MOTOR`)
+
+Precio, stock, altas y bajas de productos, variantes y contenido (nombre, descripción, marca, categorías, fotos) los escribe el runner del sistema interno de KitMaq, con vista previa, OK y tope por corrida. Para que una sesión no deje la tienda distinta del motor, estas tools **se niegan por defecto** y devuelven un mensaje que dice dónde hacer el cambio:
+
+`update_product_stock_price`, `update_variant_stock`, `update_product_variant`, `batch_update_product_variants`, `replace_all_product_variants`, `create_product_variant`, `delete_product_variant`, `create_product`, `update_product`, `delete_product`, `add_product_images`, `update_product_image`, `delete_product_image`.
+
+Siguen abiertas las escrituras que el motor no cubre: órdenes, fulfillment y tracking, clientes, cupones, categorías, páginas, blog, metafields (incluido `set_related_products`), webhooks y `set_variant_extra_shipping_days`.
+
+Para volver al comportamiento anterior (escribir directo), agregá en `.env.local` o en el entorno del server:
+
+```env
+KITMAQ_ESCRITURAS_MOTOR=permitir
+```
+
+Cualquier otro valor, o la variable ausente, mantiene el candado. El candado vive en `src/tool-guard.ts`.
 
 ## Características
 
@@ -134,6 +149,7 @@ cd mcp/tiendanube-mcp
 npm install
 npm run build    # compila a dist/
 npm run dev      # corre con tsx (stdio)
+npm test         # tests con node:test (tsx --test)
 ```
 
 ## Equivalente curl
