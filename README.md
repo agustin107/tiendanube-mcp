@@ -1,6 +1,6 @@
 # @traid/tiendanube-mcp
 
-MCP server completo para [Tienda Nube / Nuvemshop](https://www.tiendanube.com). 13 tools de operaciones de seller —incluyendo write-back— para usar desde Claude Code, Cursor, o cualquier cliente MCP.
+MCP server completo para [Tienda Nube / Nuvemshop](https://www.tiendanube.com). 84 tools de operaciones de seller —incluyendo write-back— para usar desde Claude Code, Cursor, o cualquier cliente MCP.
 
 Primer MCP completo de Tienda Nube en el ecosistema. Los dos proyectos community que existían en Python (`AlexandreProenca/nuvemshop-mcp-server`, `ropu/MCP-tienda_nube`) no tienen licencia y no son legalmente reutilizables en un producto comercial.
 
