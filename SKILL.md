@@ -1,7 +1,7 @@
 ---
 name: tiendanube-mcp
 description: Complete MCP server for Tienda Nube / Nuvemshop seller operations — products, orders, customers, categories, coupons, webhooks with write-back
-version: 1.0.0
+version: 1.5.0
 metadata:
   openclaw:
     requires:
@@ -17,7 +17,15 @@ metadata:
 
 # Tienda Nube / Nuvemshop MCP Server
 
-First complete MCP server for Tienda Nube (Argentina) and Nuvemshop (Brazil). 13 tools for seller operations — manage products, orders, customers, categories, coupons, and webhooks, with real write-back.
+First complete MCP server for Tienda Nube (Argentina) and Nuvemshop (Brazil). 84 tools for seller operations — products, variants, orders, fulfillment, customers, categories, coupons, pages, blog, metafields, analytics and webhooks, with real write-back.
+
+## ⛔ Engine-owned writes (KitMaq)
+
+In KitMaq's store, price, stock, variants, product creation/deletion, product content (name, description, brand, categories) and images are written only by the runner of KitMaq's internal system (connector `kitmaq-internal`), with preview, approval and per-run caps. Unless `KITMAQ_ESCRITURAS_MOTOR=permitir`, these tools refuse before calling the API and say where the change belongs: `update_product_stock_price`, `update_variant_stock`, `update_product_variant`, `batch_update_product_variants`, `replace_all_product_variants`, `create_product_variant`, `delete_product_variant`, `create_product`, `update_product`, `delete_product`, `add_product_images`, `update_product_image`, `delete_product_image`.
+
+- A price request ("raise welders 5%") goes to the internal system: `ver_precios` → `cambiar_precio_fijo` (per SKU) or `cambiar_parametros_precios` (general criterion) with `confirmar=false` for the preview (`cambiar_precio_fijo` replaces the SKU's whole fixed-price set: resend the fixed values that must stay) → the person's OK → `confirmar=true` leaves it in the pending proposal → `aprobar_propuesta_precios` or `/precios/propuesta`. The runner takes it to the store.
+- Stock is corrected in POSBerry. New products and product pages are approved in the internal system (`/precios/posberry`, `/precios/fichas`).
+- Do not ask to turn the switch on to fulfil an ordinary request.
 
 ## Setup
 
@@ -46,11 +54,11 @@ See `README.md` for the step-by-step token retrieval flow.
 - **list_coupons** — Filter by code, validity, type, dates
 - **list_webhooks** — Hooks registered by your app in this store
 
-### Write operations (4)
-- **update_product** — Update attributes and variants (price, stock, SKU, name)
+### Write operations
+- **update_product** — Update product attributes (name, description, tags, categories). Engine-owned in KitMaq: refuses by default
 - **update_order_status** — Close, open, or cancel an order (with refund/restock options)
 - **create_coupon** — Create percentage, absolute, or shipping coupons with full rule set
-- (more write-back planned for v1.1: `update_product_stock`, `create_webhook`)
+- Variants, stock/price, images, fulfillment, customers, categories, pages, blog, metafields and webhooks: see `README.md`
 
 ## Supported markets
 
@@ -72,7 +80,6 @@ Works with:
 
 - "List products with less than 5 units in stock"
 - "Show me paid orders from the last 7 days"
-- "Update the price of variant 123 to 15000"
 - "Cancel order 12345 with reason inventory and restock"
 - "Create a coupon `SUMMER30` for 30% off with min purchase 20000, valid until 2026-12-31"
 - "What webhooks does my app have registered?"

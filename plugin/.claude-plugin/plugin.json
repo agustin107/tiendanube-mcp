@@ -1,7 +1,7 @@
 {
   "name": "tiendanube-mcp",
-  "version": "0.2.0",
-  "description": "Conecta el MCP de TiendaNube de KitMaq (64 tools: productos, variantes, stock/precio, ordenes, envios, clientes, categorias, cupones, metricas de ventas y webhooks) e incluye conocimiento sobre que tool usar para cada tarea y las reglas de marca KitMaq.",
+  "version": "0.3.0",
+  "description": "Conecta el MCP de TiendaNube de KitMaq (84 tools: productos, ordenes, envios, clientes, categorias, cupones, contenido, metricas de ventas y webhooks) e incluye conocimiento sobre que tool usar para cada tarea, que cambios van al sistema interno de KitMaq y las reglas de marca KitMaq.",
   "author": {
     "name": "Agustin Ramirez"
   },
