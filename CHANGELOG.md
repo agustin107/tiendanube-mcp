@@ -2,6 +2,14 @@
 
 Todas las versiones de `@traid/tiendanube-mcp` en orden inverso.
 
+## [Unreleased]
+
+### Changed
+- **Cambio de comportamiento por defecto:** las tools que escriben campos del motor de precios de KitMaq (precio, stock, variantes, alta/baja de productos, nombre/descripción/marca/categorías y fotos: `update_product_stock_price`, `update_variant_stock`, `update_product_variant`, `batch_update_product_variants`, `replace_all_product_variants`, `create_product_variant`, `delete_product_variant`, `create_product`, `update_product`, `delete_product`, `add_product_images`, `update_product_image`, `delete_product_image`) se niegan antes de llamar a la API y explican dónde se hace el cambio. Para volver al comportamiento anterior: `KITMAQ_ESCRITURAS_MOTOR=permitir`.
+
+### Added
+- `src/tool-guard.ts` (candado en un solo punto, envuelve el `McpServer`) y `pnpm test` con `node:test`.
+
 ## [1.5.0] — 2026-07-13
 
 ### Added

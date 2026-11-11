@@ -8,9 +8,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pnpm run build   # compile TypeScript → dist/
 pnpm run dev     # run server directly via tsx (stdio, no compile step)
 pnpm run start   # run compiled dist/index.js
+pnpm test        # node:test via tsx (test/*.test.ts)
 ```
 
-No test runner or linter is configured.
+No linter is configured.
+
+Engine-owned writes (price, stock, variants, product create/delete, content, images) refuse unless `KITMAQ_ESCRITURAS_MOTOR=permitir`; see `src/tool-guard.ts`. A new tool that writes those fields must be added to `ENGINE_OWNED_TOOLS`.
 
 ## Required env vars
 

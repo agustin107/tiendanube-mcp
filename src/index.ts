@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-// MCP Server Tienda Nube / Nuvemshop — 64 tools.
-// v1.3.0: analytics, fulfillment orders, transactions, complete coupon/webhook CRUD.
+// MCP Server Tienda Nube / Nuvemshop — 84 tools.
 
 import './env.js'
 
+import { createRequire } from 'node:module'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 
@@ -105,11 +105,15 @@ import {
   registerDeleteMetafield,
   registerSetRelatedProducts,
 } from './tools/metafields.js'
+import { guardServer } from './tool-guard.js'
 
-const server = new McpServer({
+// Resolves from both src/ (tsx) and dist/ (node): package.json sits one level up.
+const PACKAGE_VERSION: string = createRequire(import.meta.url)('../package.json').version
+
+const server = guardServer(new McpServer({
   name: 'tiendanube',
-  version: '1.5.0',
-})
+  version: PACKAGE_VERSION,
+}))
 
 // Productos (7)
 registerListProducts(server)
@@ -224,7 +228,7 @@ registerSetRelatedProducts(server)
 async function main() {
   const transport = new StdioServerTransport()
   await server.connect(transport)
-  console.error('[tn-mcp] Server iniciado — 84 tools disponibles (v1.5.0)')
+  console.error(`[tn-mcp] Server iniciado — 84 tools disponibles (v${PACKAGE_VERSION})`)
 }
 
 main().catch((error) => {

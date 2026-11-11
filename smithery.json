@@ -1,7 +1,7 @@
 {
   "qualifiedName": "@traid/tiendanube-mcp",
   "displayName": "Tienda Nube / Nuvemshop MCP Server",
-  "description": "Complete MCP server for Tienda Nube (Argentina) and Nuvemshop (Brazil) seller operations — 13 tools for products, orders, customers, categories, coupons, and webhooks with write-back",
+  "description": "Complete MCP server for Tienda Nube (Argentina) and Nuvemshop (Brazil) seller operations — 84 tools for products, variants, orders, customers, categories, coupons, content, metafields, and webhooks with write-back",
   "homepage": "https://github.com/MarcosNahuel/tiendanube-mcp",
   "iconUrl": "https://d26lpennugtm8s.cloudfront.net/stores/001/057/628/themes/common/logo-2063726756-1737744095-12cca7a3074d80a234f2ea87b0f5f0d91737744096.png",
   "connections": [
